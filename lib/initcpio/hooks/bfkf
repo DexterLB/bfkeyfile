@@ -9,10 +9,13 @@ run_hook ()
         decfile="/crypto_keyfile.bin"
 
         iteration=1000
-        attempts=5
+        attempts=0
 
-        prompt="Enter password: "
-        badpassword="Password incorrect"
+        prompt="DON'T PANIC! "
+        badpassword="Well, you might start panicking now."
+        failmsg="eat shit."
+        progressmsg="Doing some top secret stuff..."
+        donemsg="done."
 
         dev="$(echo "${bfkf}" | cut -d: -f1)"
         arg1="$(echo "${bfkf}" | cut -d: -f2)"
@@ -35,7 +38,10 @@ run_hook ()
 
         if [ -f "${encfile}" ]; then
             while true; do
+                clear
                 read -rsp "${prompt}" password
+        echo
+        echo -n "${progressmsg}"
                 i=0
                 while [ ${i} -lt ${iteration} ]; do
                     password=`echo -n "${password}" | openssl dgst -whirlpool -hex 2> /dev/null | cut -d ' ' -f 2`
@@ -44,10 +50,17 @@ run_hook ()
                 openssl bf-cbc -pass pass:"${password}" -d -in "${encfile}" -out "${decfile}" >/dev/null 2>&1
                 retcode="$?"
                 if [ "${retcode}" != "0" ]; then
-                    echo -e "\n${badpassword}\n"
-                    attempts=$(( ${attempts} - 1 ))
-                    [ "${attempts}" == "0" ] && echo "Keyfile could not be decrypted" && break
+                    if [ "${attempts}" == "0" ]; then
+                        echo "${failmsg}"
+                        sleep 1
+                        poweroff -f
+                        break
+                        else
+                        echo -e "\n${badpassword}\n"
+                        attempts=$(( ${attempts} - 1 ))
+                    fi
                 else
+                    echo "${donemsg}"
                     break
                 fi
             done
